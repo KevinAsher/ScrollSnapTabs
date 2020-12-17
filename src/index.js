@@ -190,7 +190,7 @@ function useReactiveTabIndicator({ tabRefs, tabPanelsRef, tabIndicatorRef }) {
   const rafIdRef = React.useRef();
   const targetTranslateXRef = React.useRef();
   const targetScaleXRef = React.useRef();
-  const rafCounterRef = React.useRef(0);
+  const hasScrollInitiatedRef = React.useRef(false);
 
   React.useLayoutEffect(() => {
     // console.log(
@@ -239,6 +239,7 @@ function useReactiveTabIndicator({ tabRefs, tabPanelsRef, tabIndicatorRef }) {
       // console.log("animateScrollTo was skipped");
       skipForcedScrollRef.current = false;
     }
+    hasScrollInitiatedRef.current = false;
     // console.log({ index });
   }, [index]);
 
@@ -250,12 +251,12 @@ function useReactiveTabIndicator({ tabRefs, tabPanelsRef, tabIndicatorRef }) {
       easeScaleX
     ) {
       let diffTranslateX = targetTranslateXRef.current - originTranslateX;
-      let translateX =
-        Math.abs(diffTranslateX) < 0.01 ? 0 : diffTranslateX * easeTranslateX;
+      let translateX = Math.abs(diffTranslateX) < 0.01 ? 0 : diffTranslateX * easeTranslateX;
 
       let diffScaleX = targetScaleXRef.current - originScaleX;
       let scaleX = Math.abs(diffScaleX) < 0.01 ? 0 : diffScaleX * easeScaleX;
 
+      // console.log(Math.abs(translateX - originTranslateX), Math.abs(scaleX - originScaleX))
       if (translateX !== 0 || scaleX !== 0) {
         // Update `originTranslateX` scroll position
         originTranslateX += translateX;
@@ -507,7 +508,15 @@ function useReactiveTabIndicator({ tabRefs, tabPanelsRef, tabIndicatorRef }) {
     targetScaleXRef.current = scaleX;
     if (!rafActiveRef.current) {
       rafActiveRef.current = true;
-      rafIdRef.current = requestAnimationFrame(() => onScrollChanged());
+
+      if (!hasScrollInitiatedRef.current) {
+        requestAnimationFrame(() => {
+          rafIdRef.current = requestAnimationFrame(() => onScrollChanged());
+        });
+        hasScrollInitiatedRef.current = true;
+      } else {
+        rafIdRef.current = requestAnimationFrame(() => onScrollChanged());
+      }
       // console.log('requestAnimationFrame')
     }
 
